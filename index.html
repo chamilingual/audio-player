@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1622">
+<title>リスニング教材プレーヤー</title>
+<style>
+  :root{
+    --bg:#0E1622;
+    --surface:#17222F;
+    --surface-2:#1E2C3C;
+    --line:#2A3B4F;
+    --text:#EAF0F7;
+    --muted:#8FA0B4;
+    --accent:#FFC145;
+    --accent-ink:#121A26;
+    --radius:14px;
+    --tap:56px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    -webkit-text-size-adjust:100%;
+    display:flex;flex-direction:column;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ── ヘッダー ─────────────────────────── */
+  header{
+    padding:14px 16px 12px;border-bottom:1px solid var(--line);
+    display:flex;align-items:baseline;gap:10px;flex:none;
+  }
+  h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.02em}
+  #count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  #reload{margin-left:auto;font-size:12px;color:var(--muted);padding:6px 8px}
+
+  /* ── 一覧 ─────────────────────────────── */
+  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 16px}
+  .row{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    padding:14px 12px;border-radius:var(--radius);border:1px solid transparent;
+  }
+  .row + .row{margin-top:4px}
+  .row .no{
+    font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);
+    min-width:2.2em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .row .nm{flex:1;font-size:15px;line-height:1.35;word-break:break-word}
+  .row[aria-current="true"]{background:var(--surface);border-color:var(--line)}
+  .row[aria-current="true"] .no{color:var(--accent)}
+  .row[aria-current="true"] .nm{font-weight:700}
+  .bars{display:flex;gap:2px;align-items:flex-end;height:14px;opacity:0}
+  .row[aria-current="true"] .bars{opacity:1}
+  .bars i{width:3px;background:var(--accent);height:5px;border-radius:1px}
+  body.playing .row[aria-current="true"] .bars i{animation:eq .9s ease-in-out infinite}
+  .bars i:nth-child(2){animation-delay:.15s}
+  .bars i:nth-child(3){animation-delay:.3s}
+  @keyframes eq{0%,100%{height:4px}50%{height:14px}}
+  @media (prefers-reduced-motion:reduce){.bars i{animation:none !important;height:9px}}
+
+  #msg{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+
+  /* ── プレーヤー ───────────────────────── */
+  footer{
+    flex:none;background:var(--surface);border-top:1px solid var(--line);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  #now{
+    font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin-bottom:8px;min-height:1.3em;
+  }
+  #now.idle{color:var(--muted);font-weight:400}
+
+  .seek{display:flex;align-items:center;gap:10px}
+  .t{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-width:38px}
+  .t.right{text-align:right}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;flex:1;height:24px;background:transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line)}
+  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);margin-top:-6px;
+  }
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--accent)}
+  input[type=range]:disabled::-webkit-slider-thumb{background:var(--muted)}
+
+  .controls{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0 4px}
+  .ctl{
+    min-width:var(--tap);height:var(--tap);border-radius:12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-size:11px;color:var(--muted);
+  }
+  .ctl svg{width:26px;height:26px;fill:none;stroke:var(--text);stroke-width:2;
+           stroke-linecap:round;stroke-linejoin:round}
+  .ctl:disabled{opacity:.3}
+  .ctl:active:not(:disabled){background:var(--surface-2)}
+  #play{
+    width:68px;height:68px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;margin:0 6px;flex:none;
+  }
+  #play svg{width:30px;height:30px;fill:var(--accent-ink);stroke:none}
+  #play:disabled{background:var(--line)}
+  #play.loading{background:var(--line)}
+  #play.loading svg{display:none}
+  .spinner{width:26px;height:26px;border:3px solid var(--muted);border-top-color:var(--accent);
+           border-radius:50%;animation:spin .8s linear infinite;display:none}
+  #play.loading .spinner{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* 速度 ＋ リピート */
+  .bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .speeds{
+    display:flex;gap:6px;overflow-x:auto;flex:1;padding:2px 0;
+    scrollbar-width:none;
+  }
+  .speeds::-webkit-scrollbar{display:none}
+  .sp{
+    flex:none;padding:9px 12px;border-radius:999px;background:var(--surface-2);
+    font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .sp[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+  #repeat{
+    flex:none;height:40px;padding:0 12px;border-radius:999px;background:var(--surface-2);
+    display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+  }
+  #repeat[data-mode="one"],#repeat[data-mode="all"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+  #repeat svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;
+              stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title">リスニング教材</h1>
+  <span id="count"></span>
+  <button id="reload" type="button">更新</button>
+</header>
+
+<main>
+  <div id="msg">音声を読み込んでいます…</div>
+  <div id="list" hidden></div>
+</main>
+
+<footer>
+  <div id="now" class="idle">上の一覧から音声を選んでください</div>
+
+  <div class="seek">
+    <span class="t" id="cur">0:00</span>
+    <input id="seek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="再生位置">
+    <span class="t right" id="dur">0:00</span>
+  </div>
+
+  <div class="controls">
+    <button class="ctl" id="prev" type="button" disabled aria-label="前の音声">
+      <svg viewBox="0 0 24 24"><path d="M19 5 9 12l10 7z" fill="currentColor" stroke="none"/><path d="M6 5v14"/></svg>
+    </button>
+
+    <button class="ctl" id="back" type="button" disabled aria-label="3秒戻す">
+      <svg viewBox="0 0 24 24"><path d="M4 5v6h6"/><path d="M4.6 11a8 8 0 1 1 .9 5"/></svg>
+      <span>3秒</span>
+    </button>
+
+    <button id="play" type="button" disabled aria-label="再生">
+      <span class="spinner"></span>
+      <svg id="playIcon" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>
+    </button>
+
+    <button class="ctl" id="fwd" type="button" disabled aria-label="3秒進める">
+      <svg viewBox="0 0 24 24"><path d="M20 5v6h-6"/><path d="M19.4 11a8 8 0 1 0-.9 5"/></svg>
+      <span>3秒</span>
+    </button>
+
+    <button class="ctl" id="next" type="button" disabled aria-label="次の音声">
+      <svg viewBox="0 0 24 24"><path d="M5 5l10 7L5 19z" fill="currentColor" stroke="none"/><path d="M18 5v14"/></svg>
+    </button>
+  </div>
+
+  <div class="bar">
+    <div class="speeds" id="speeds" role="group" aria-label="再生速度"></div>
+    <button id="repeat" type="button" data-mode="off" aria-label="リピート">
+      <svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span id="repeatLabel">なし</span>
+    </button>
+  </div>
+</footer>
+
+<audio id="audio" preload="metadata" playsinline></audio>
+
+<script>
+/* ==================================================================
+   設定 ─ 先生が触るのはここだけ
+   ================================================================== */
+const CONFIG = {
+  // GASウェブアプリの /exec で終わるURL
+  gasUrl: 'https://script.google.com/macros/s/ここにデプロイIDを貼り付け/exec',
+
+  // 画面の見出し
+  title: 'リスニング教材',
+
+  // 'proxy' … GAS経由でダウンロードしてから再生（推奨・速度変更や巻き戻しが確実）
+  // 'direct' … Driveから直接ストリーミング（大きいファイル向け。ただし混雑時に失敗しうる）
+  mode: 'proxy',
+
+  speeds: [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.5],
+  skipSeconds: 3
+};
+
+/* ================================================================== */
+
+const audio = document.getElementById('audio');
+const el = id => document.getElementById(id);
+const blobCache = new Map();
+
+let files = [];
+let index = -1;
+let speed = Number(localStorage.getItem('player.speed')) || 1.0;
+let repeatMode = localStorage.getItem('player.repeat') || 'off'; // off | one | all
+let seeking = false;
+let loadToken = 0;
+
+/* ── 起動 ─────────────────────────────── */
+el('title').textContent = CONFIG.title;
+document.title = CONFIG.title;
+buildSpeeds();
+applyRepeat();
+loadList();
+
+el('reload').addEventListener('click', () => loadList(true));
+
+async function loadList(refresh) {
+  el('list').hidden = true;
+  el('msg').hidden = false;
+  el('msg').textContent = '音声を読み込んでいます…';
+  try {
+    const res = await fetch(CONFIG.gasUrl + '?action=list' + (refresh ? '&refresh=1' : ''));
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || '読み込みに失敗しました');
+    files = data.files || [];
+    if (!files.length) {
+      el('msg').textContent = 'このフォルダに音声がまだありません。';
+      return;
+    }
+    renderList();
+  } catch (e) {
+    el('msg').innerHTML = '音声を読み込めませんでした。<br>電波の良い場所で「更新」を押してください。<br><br>' +
+      '<span style="font-size:12px;opacity:.7">' + escapeHtml(String(e.message || e)) + '</span>';
+  }
+}
+
+function renderList() {
+  const list = el('list');
+  list.innerHTML = '';
+  files.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'row';
+    b.innerHTML =
+      '<span class="no">' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<span class="nm"></span>' +
+      '<span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>';
+    b.querySelector('.nm').textContent = f.label || f.name;
+    b.addEventListener('click', () => select(i, true));
+    list.appendChild(b);
+  });
+  el('count').textContent = files.length + '件';
+  el('msg').hidden = true;
+  list.hidden = false;
+  markCurrent();
+}
+
+function markCurrent() {
+  [...el('list').children].forEach((row, i) => {
+    row.setAttribute('aria-current', i === index ? 'true' : 'false');
+  });
+  el('prev').disabled = index <= 0;
+  el('next').disabled = index < 0 || index >= files.length - 1;
+}
+
+/* ── 選択と読み込み ───────────────────── */
+async function select(i, autoplay) {
+  if (i < 0 || i >= files.length) return;
+  index = i;
+  const f = files[i];
+  markCurrent();
+
+  el('now').textContent = f.label || f.name;
+  el('now').classList.remove('idle');
+
+  const token = ++loadToken;
+  setLoading(true);
+
+  try {
+    const src = await getSource(f);
+    if (token !== loadToken) return;         // 読み込み中に別の音声が選ばれた
+    audio.src = src;
+    audio.load();
+    applySpeed();
+    enableControls(true);
+    if (autoplay) await play();
+  } catch (e) {
+    if (token !== loadToken) return;
+    el('now').textContent = '読み込めませんでした（もう一度タップしてください）';
+    el('now').classList.add('idle');
+    enableControls(false);
+  } finally {
+    if (token === loadToken) setLoading(false);
+  }
+}
+
+async function getSource(f) {
+  if (CONFIG.mode === 'direct') {
+    return 'https://drive.usercontent.google.com/download?export=download&id=' + encodeURIComponent(f.id);
+  }
+  if (blobCache.has(f.id)) return blobCache.get(f.id);
+
+  const res = await fetch(CONFIG.gasUrl + '?action=audio&id=' + encodeURIComponent(f.id));
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'ダウンロードに失敗しました');
+
+  const bin = atob(data.data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: data.mimeType }));
+  blobCache.set(f.id, url);
+  return url;
+}
+
+/* ── 再生コントロール ─────────────────── */
+async function play() {
+  try { await audio.play(); } catch (e) { /* 端末が再生を拒否した場合は無視 */ }
+  applySpeed();
+}
+
+el('play').addEventListener('click', async () => {
+  if (index < 0) { await select(0, true); return; }
+  if (audio.paused) await play(); else audio.pause();
+});
+el('back').addEventListener('click', () => nudge(-CONFIG.skipSeconds));
+el('fwd').addEventListener('click', () => nudge(CONFIG.skipSeconds));
+el('prev').addEventListener('click', () => select(index - 1, !audio.paused));
+el('next').addEventListener('click', () => select(index + 1, !audio.paused));
+
+function nudge(sec) {
+  if (!isFinite(audio.duration)) return;
+  audio.currentTime = Math.min(Math.max(0, audio.currentTime + sec), audio.duration);
+  updateTime();
+}
+
+audio.addEventListener('play', () => { setPlayIcon(true); document.body.classList.add('playing'); });
+audio.addEventListener('pause', () => { setPlayIcon(false); document.body.classList.remove('playing'); });
+audio.addEventListener('loadedmetadata', () => { applySpeed(); updateTime(); });
+audio.addEventListener('timeupdate', updateTime);
+audio.addEventListener('ended', onEnded);
+
+function onEnded() {
+  if (repeatMode === 'one') { audio.currentTime = 0; play(); return; }
+  if (index < files.length - 1) { select(index + 1, true); return; }
+  if (repeatMode === 'all') { select(0, true); return; }
+  setPlayIcon(false);
+}
+
+/* ── 速度 ─────────────────────────────── */
+function buildSpeeds() {
+  const box = el('speeds');
+  CONFIG.speeds.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'sp';
+    b.dataset.v = v;
+    b.textContent = v.toFixed(1) + '×';
+    b.addEventListener('click', () => {
+      speed = v;
+      localStorage.setItem('player.speed', String(v));
+      applySpeed();
+    });
+    box.appendChild(b);
+  });
+  applySpeed();
+}
+
+function applySpeed() {
+  audio.playbackRate = speed;
+  if ('preservesPitch' in audio) audio.preservesPitch = true;
+  [...el('speeds').children].forEach(b => {
+    b.setAttribute('aria-pressed', Number(b.dataset.v) === speed ? 'true' : 'false');
+  });
+}
+
+/* ── リピート ─────────────────────────── */
+el('repeat').addEventListener('click', () => {
+  repeatMode = repeatMode === 'off' ? 'one' : repeatMode === 'one' ? 'all' : 'off';
+  localStorage.setItem('player.repeat', repeatMode);
+  applyRepeat();
+});
+
+function applyRepeat() {
+  const label = { off: 'なし', one: '1曲', all: '全曲' }[repeatMode];
+  el('repeat').dataset.mode = repeatMode;
+  el('repeatLabel').textContent = label;
+  el('repeat').setAttribute('aria-label', 'リピート：' + label);
+  audio.loop = false;                       // 制御は ended 側で行う
+}
+
+/* ── シークバー ───────────────────────── */
+const seek = el('seek');
+seek.addEventListener('input', () => {
+  seeking = true;
+  if (isFinite(audio.duration)) el('cur').textContent = fmt(audio.duration * seek.value / 1000);
+});
+seek.addEventListener('change', () => {
+  if (isFinite(audio.duration)) audio.currentTime = audio.duration * seek.value / 1000;
+  seeking = false;
+});
+
+function updateTime() {
+  const d = isFinite(audio.duration) ? audio.duration : 0;
+  el('dur').textContent = fmt(d);
+  if (seeking) return;
+  el('cur').textContent = fmt(audio.currentTime);
+  seek.value = d ? Math.round(audio.currentTime / d * 1000) : 0;
+}
+
+/* ── 表示ヘルパー ─────────────────────── */
+function setLoading(on) { el('play').classList.toggle('loading', on); el('play').disabled = on; }
+function setPlayIcon(playing) {
+  el('playIcon').innerHTML = playing
+    ? '<path d="M7 4.5h4v15H7zM13 4.5h4v15h-4z"/>'
+    : '<path d="M7 4.5v15l13-7.5z"/>';
+  el('play').setAttribute('aria-label', playing ? '一時停止' : '再生');
+}
+function enableControls(on) {
+  ['back', 'fwd', 'seek'].forEach(id => el(id).disabled = !on);
+  el('play').disabled = !on;
+  markCurrent();
+}
+function fmt(s) {
+  s = Math.max(0, Math.floor(s || 0));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+/* 一覧が空でも再生ボタンで先頭から始められるように */
+el('play').disabled = false;
+</script>
+</body>
+</html>
