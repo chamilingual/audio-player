@@ -31,15 +31,65 @@
 
   /* ── ヘッダー ─────────────────────────── */
   header{
-    padding:14px 16px 12px;border-bottom:1px solid var(--line);
-    display:flex;align-items:baseline;gap:10px;flex:none;
+    padding:12px 12px 11px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:8px;flex:none;
   }
-  h1{margin:0;font-size:16px;font-weight:700;letter-spacing:.02em}
-  #count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-  #reload{margin-left:auto;font-size:12px;color:var(--muted);padding:6px 8px}
+  #back{
+    display:none;width:34px;height:34px;margin-left:-8px;border-radius:9px;
+    align-items:center;justify-content:center;flex:none;
+  }
+  body[data-screen="files"][data-multi="1"] #back{display:flex}
+  #back svg{width:20px;height:20px;fill:none;stroke:var(--text);stroke-width:2.2;
+            stroke-linecap:round;stroke-linejoin:round}
+  #back:active{background:var(--surface-2)}
+  .htext{min-width:0;flex:1}
+  h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.02em;
+     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #count{display:block;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:1px}
+  #reload{font-size:12px;color:var(--muted);padding:8px;flex:none}
 
-  /* ── 一覧 ─────────────────────────────── */
+  /* ── 本体 ─────────────────────────────── */
   main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px 16px}
+  .screen{display:none}
+  .screen.on{display:block}
+
+  #msg{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+
+  /* フォルダ選択画面 */
+  .lead{padding:14px 6px 10px;font-size:13px;color:var(--muted)}
+  .fcard{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    padding:16px 14px;border-radius:var(--radius);background:var(--surface);
+    border:1px solid var(--line);
+  }
+  .fcard + .fcard{margin-top:8px}
+  .fcard:active{background:var(--surface-2)}
+  .fcard .fi{width:24px;height:24px;flex:none;fill:none;stroke:var(--accent);
+             stroke-width:1.8;stroke-linejoin:round}
+  .fcard .ft{flex:1;min-width:0}
+  .fcard .fn{font-size:15px;font-weight:700;line-height:1.35;word-break:break-word}
+  .fcard .fc{font-size:12px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+  .fcard .fa{width:16px;height:16px;flex:none;fill:none;stroke:var(--muted);
+             stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .fcard[data-sub="1"]{margin-left:16px}
+
+  /* フォルダ切り替えプルダウン */
+  #folderBar{display:none;margin:4px 0 10px;position:relative}
+  body[data-screen="files"][data-multi="1"] #folderBar{display:block}
+  #folderBar svg{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    width:14px;height:14px;fill:none;stroke:var(--muted);stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round;pointer-events:none;
+  }
+  #folderSelect{
+    -webkit-appearance:none;appearance:none;width:100%;
+    background:var(--surface-2);color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:12px 34px 12px 14px;font-size:14px;font-weight:600;
+    font-family:inherit;line-height:1.3;
+  }
+  #folderSelect option{background:var(--surface);color:var(--text)}
+
+  /* ファイル一覧 */
   .row{
     display:flex;align-items:center;gap:12px;width:100%;text-align:left;
     padding:14px 12px;border-radius:var(--radius);border:1px solid transparent;
@@ -62,8 +112,6 @@
   @keyframes eq{0%,100%{height:4px}50%{height:14px}}
   @media (prefers-reduced-motion:reduce){.bars i{animation:none !important;height:9px}}
 
-  #msg{padding:32px 16px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
-
   /* ── プレーヤー ───────────────────────── */
   footer{
     flex:none;background:var(--surface);border-top:1px solid var(--line);
@@ -79,9 +127,7 @@
   .t{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-width:38px}
   .t.right{text-align:right}
-  input[type=range]{
-    -webkit-appearance:none;appearance:none;flex:1;height:24px;background:transparent;
-  }
+  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:24px;background:transparent}
   input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line)}
   input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
   input[type=range]::-webkit-slider-thumb{
@@ -114,12 +160,8 @@
   #play.loading .spinner{display:block}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* 速度 ＋ リピート */
   .bar{display:flex;align-items:center;gap:8px;margin-top:8px}
-  .speeds{
-    display:flex;gap:6px;overflow-x:auto;flex:1;padding:2px 0;
-    scrollbar-width:none;
-  }
+  .speeds{display:flex;gap:6px;overflow-x:auto;flex:1;padding:2px 0;scrollbar-width:none}
   .speeds::-webkit-scrollbar{display:none}
   .sp{
     flex:none;padding:9px 12px;border-radius:999px;background:var(--surface-2);
@@ -136,21 +178,40 @@
               stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
-<body>
+<body data-screen="folders" data-multi="0">
 
 <header>
-  <h1 id="title">リスニング教材</h1>
-  <span id="count"></span>
+  <button id="back" type="button" aria-label="フォルダ一覧に戻る">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="htext">
+    <h1 id="title">リスニング教材</h1>
+    <span id="count"></span>
+  </div>
   <button id="reload" type="button">更新</button>
 </header>
 
 <main>
-  <div id="msg">音声を読み込んでいます…</div>
-  <div id="list" hidden></div>
+  <div id="msg">読み込んでいます…</div>
+
+  <!-- 最初の画面：フォルダを選ぶ -->
+  <section class="screen" id="folderScreen">
+    <p class="lead">聞きたい教材のフォルダを選んでください。</p>
+    <div id="folderList"></div>
+  </section>
+
+  <!-- 音声一覧 -->
+  <section class="screen" id="fileScreen">
+    <div id="folderBar">
+      <select id="folderSelect" aria-label="フォルダを切り替える"></select>
+      <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div id="list"></div>
+  </section>
 </main>
 
 <footer>
-  <div id="now" class="idle">上の一覧から音声を選んでください</div>
+  <div id="now" class="idle">一覧から音声を選んでください</div>
 
   <div class="seek">
     <span class="t" id="cur">0:00</span>
@@ -163,7 +224,7 @@
       <svg viewBox="0 0 24 24"><path d="M19 5 9 12l10 7z" fill="currentColor" stroke="none"/><path d="M6 5v14"/></svg>
     </button>
 
-    <button class="ctl" id="back" type="button" disabled aria-label="3秒戻す">
+    <button class="ctl" id="back3" type="button" disabled aria-label="3秒戻す">
       <svg viewBox="0 0 24 24"><path d="M4 5v6h6"/><path d="M4.6 11a8 8 0 1 1 .9 5"/></svg>
       <span>3秒</span>
     </button>
@@ -200,13 +261,16 @@
    ================================================================== */
 const CONFIG = {
   // GASウェブアプリの /exec で終わるURL
-  gasUrl: 'https://script.google.com/macros/s/AKfycbyTTqsU-KUr5phx6ET2bvZ4jwT-f-WGk3WaEWgLUS_p-ZH8wN6Ekr3V9QwFq8YfR5cTpw/exec',
+  gasUrl: 'https://script.google.com/macros/s/ここにデプロイIDを貼り付け/exec',
 
   // 画面の見出し
-  title: 'TOEIC Camp Listening 2026',
+  title: 'リスニング教材',
+
+  // 親フォルダ直下にも音声を置いている場合の、その選択肢の表示名
+  rootLabel: 'その他の音声',
 
   // 'proxy' … GAS経由でダウンロードしてから再生（推奨・速度変更や巻き戻しが確実）
-  // 'direct' … Driveから直接ストリーミング（大きいファイル向け。ただし混雑時に失敗しうる）
+  // 'direct' … Driveから直接ストリーミング（大きいファイル向け。混雑時に失敗しうる）
   mode: 'proxy',
 
   speeds: [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.5],
@@ -219,6 +283,8 @@ const audio = document.getElementById('audio');
 const el = id => document.getElementById(id);
 const blobCache = new Map();
 
+let choices = [];        // 選べるフォルダ [{id,label,count,depth}]
+let folder = null;       // 今開いているフォルダ
 let files = [];
 let index = -1;
 let speed = Number(localStorage.getItem('player.speed')) || 1.0;
@@ -231,27 +297,129 @@ el('title').textContent = CONFIG.title;
 document.title = CONFIG.title;
 buildSpeeds();
 applyRepeat();
-loadList();
+boot();
 
-el('reload').addEventListener('click', () => loadList(true));
+el('reload').addEventListener('click', () => boot(true));
+el('back').addEventListener('click', showFolderScreen);
+el('folderSelect').addEventListener('change', e => {
+  const c = choices.find(x => x.id === e.target.value);
+  if (c) openFolder(c);
+});
 
-async function loadList(refresh) {
-  el('list').hidden = true;
-  el('msg').hidden = false;
-  el('msg').textContent = '音声を読み込んでいます…';
+async function boot(refresh) {
+  showMessage('読み込んでいます…');
   try {
-    const res = await fetch(CONFIG.gasUrl + '?action=list' + (refresh ? '&refresh=1' : ''));
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || '読み込みに失敗しました');
-    files = data.files || [];
-    if (!files.length) {
-      el('msg').textContent = 'このフォルダに音声がまだありません。';
+    const info = await api('folders', refresh);
+    if (!info.ok) throw new Error(info.error);
+
+    choices = [];
+    // 親フォルダ直下に音声があれば、それも1つの選択肢として並べる
+    if (info.rootCount > 0) {
+      choices.push({
+        id: info.rootId,
+        label: info.folders.length ? CONFIG.rootLabel : info.rootName,
+        count: info.rootCount,
+        depth: 0
+      });
+    }
+    info.folders.forEach(f => choices.push({ id: f.id, label: f.path, count: f.count, depth: f.depth }));
+
+    if (!choices.length) {
+      showMessage('このフォルダに音声がまだありません。');
       return;
     }
+
+    document.body.dataset.multi = choices.length > 1 ? '1' : '0';
+    buildFolderScreen();
+    buildSelect();
+
+    if (choices.length === 1) {
+      openFolder(choices[0], refresh);         // フォルダが1つだけなら選択画面を出さない
+    } else if (folder && choices.some(c => c.id === folder.id)) {
+      openFolder(choices.find(c => c.id === folder.id), refresh);  // 更新時は同じフォルダに戻る
+    } else {
+      showFolderScreen();
+    }
+  } catch (e) {
+    showMessage('読み込めませんでした。<br>電波の良い場所で「更新」を押してください。<br><br>' +
+      '<span style="font-size:12px;opacity:.7">' + escapeHtml(String(e.message || e)) + '</span>');
+  }
+}
+
+function api(action, refresh, params) {
+  let url = CONFIG.gasUrl + '?action=' + action + (refresh ? '&refresh=1' : '');
+  for (const k in (params || {})) url += '&' + k + '=' + encodeURIComponent(params[k]);
+  return fetch(url).then(r => r.json());
+}
+
+/* ── フォルダ選択画面 ─────────────────── */
+function buildFolderScreen() {
+  const box = el('folderList');
+  box.innerHTML = '';
+  choices.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fcard';
+    if (c.depth > 1) b.dataset.sub = '1';
+    b.innerHTML =
+      '<svg class="fi" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' +
+      '<span class="ft"><span class="fn"></span><span class="fc">' + c.count + '件</span></span>' +
+      '<svg class="fa" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+    b.querySelector('.fn').textContent = c.label;
+    b.addEventListener('click', () => openFolder(c));
+    box.appendChild(b);
+  });
+}
+
+function buildSelect() {
+  const sel = el('folderSelect');
+  sel.innerHTML = '';
+  choices.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id;
+    o.textContent = c.label + '（' + c.count + '件）';
+    sel.appendChild(o);
+  });
+}
+
+function showFolderScreen() {
+  document.body.dataset.screen = 'folders';
+  el('msg').hidden = true;
+  el('fileScreen').classList.remove('on');
+  el('folderScreen').classList.add('on');
+  el('title').textContent = CONFIG.title;
+  el('count').textContent = choices.length + 'フォルダ';
+  window.scrollTo(0, 0);
+  document.querySelector('main').scrollTop = 0;
+}
+
+function showMessage(html) {
+  el('msg').hidden = false;
+  el('msg').innerHTML = html;
+  el('folderScreen').classList.remove('on');
+  el('fileScreen').classList.remove('on');
+}
+
+/* ── フォルダを開く ───────────────────── */
+async function openFolder(choice, refresh) {
+  const changed = !folder || folder.id !== choice.id;
+  folder = choice;
+  el('folderSelect').value = choice.id;
+
+  if (changed) resetPlayer();       // 別のフォルダに移ったら再生を止めて状態をそろえる
+
+  document.body.dataset.screen = 'files';
+  el('folderScreen').classList.remove('on');
+  showMessage('音声を読み込んでいます…');
+
+  try {
+    const data = await api('list', refresh, { folder: choice.id });
+    if (!data.ok) throw new Error(data.error);
+    files = data.files || [];
     renderList();
   } catch (e) {
-    el('msg').innerHTML = '音声を読み込めませんでした。<br>電波の良い場所で「更新」を押してください。<br><br>' +
-      '<span style="font-size:12px;opacity:.7">' + escapeHtml(String(e.message || e)) + '</span>';
+    showMessage('音声を読み込めませんでした。<br>「更新」を押してください。<br><br>' +
+      '<span style="font-size:12px;opacity:.7">' + escapeHtml(String(e.message || e)) + '</span>');
   }
 }
 
@@ -270,10 +438,29 @@ function renderList() {
     b.addEventListener('click', () => select(i, true));
     list.appendChild(b);
   });
+
+  el('title').textContent = folder.label;
   el('count').textContent = files.length + '件';
   el('msg').hidden = true;
-  list.hidden = false;
+  el('fileScreen').classList.add('on');
+  document.querySelector('main').scrollTop = 0;
   markCurrent();
+}
+
+function resetPlayer() {
+  loadToken++;
+  audio.pause();
+  audio.removeAttribute('src');
+  audio.load();
+  index = -1;
+  files = [];
+  el('now').textContent = '一覧から音声を選んでください';
+  el('now').classList.add('idle');
+  el('cur').textContent = '0:00';
+  el('dur').textContent = '0:00';
+  el('seek').value = 0;
+  enableControls(false);
+  setPlayIcon(false);
 }
 
 function markCurrent() {
@@ -299,7 +486,7 @@ async function select(i, autoplay) {
 
   try {
     const src = await getSource(f);
-    if (token !== loadToken) return;         // 読み込み中に別の音声が選ばれた
+    if (token !== loadToken) return;          // 読み込み中に別の音声が選ばれた
     audio.src = src;
     audio.load();
     applySpeed();
@@ -343,7 +530,7 @@ el('play').addEventListener('click', async () => {
   if (index < 0) { await select(0, true); return; }
   if (audio.paused) await play(); else audio.pause();
 });
-el('back').addEventListener('click', () => nudge(-CONFIG.skipSeconds));
+el('back3').addEventListener('click', () => nudge(-CONFIG.skipSeconds));
 el('fwd').addEventListener('click', () => nudge(CONFIG.skipSeconds));
 el('prev').addEventListener('click', () => select(index - 1, !audio.paused));
 el('next').addEventListener('click', () => select(index + 1, !audio.paused));
@@ -363,7 +550,7 @@ audio.addEventListener('ended', onEnded);
 function onEnded() {
   if (repeatMode === 'one') { audio.currentTime = 0; play(); return; }
   if (index < files.length - 1) { select(index + 1, true); return; }
-  if (repeatMode === 'all') { select(0, true); return; }
+  if (repeatMode === 'all') { select(0, true); return; }   // 全体リピートは今開いているフォルダの中で回ります
   setPlayIcon(false);
 }
 
@@ -402,7 +589,7 @@ el('repeat').addEventListener('click', () => {
 });
 
 function applyRepeat() {
-  const label = { off: 'なし', one: '1曲', all: '全曲' }[repeatMode];
+  const label = { off: 'なし', one: '1つ', all: '全体' }[repeatMode];
   el('repeat').dataset.mode = repeatMode;
   el('repeatLabel').textContent = label;
   el('repeat').setAttribute('aria-label', 'リピート：' + label);
@@ -437,8 +624,8 @@ function setPlayIcon(playing) {
   el('play').setAttribute('aria-label', playing ? '一時停止' : '再生');
 }
 function enableControls(on) {
-  ['back', 'fwd', 'seek'].forEach(id => el(id).disabled = !on);
-  el('play').disabled = !on;
+  ['back3', 'fwd', 'seek'].forEach(id => el(id).disabled = !on);
+  el('play').disabled = !on && !files.length ? true : false;
   markCurrent();
 }
 function fmt(s) {
@@ -448,9 +635,6 @@ function fmt(s) {
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
-
-/* 一覧が空でも再生ボタンで先頭から始められるように */
-el('play').disabled = false;
 </script>
 </body>
 </html>
